@@ -73,10 +73,10 @@ ifeq ($(OSNAME),Linux)
    CXX           = g++
    ifneq ($(MODERNGPPVERSION),1)
    	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++0x -fPIC $(INCLUDES)
-   	CXXFLAGS     += -Wno-deprecated -std=c++11
+   	CXXFLAGS     += -Wno-deprecated 
    else
    	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++11 -fPIC $(INCLUDES)
-   	CXXFLAGS     += -Wno-deprecated -std=c++11
+   	CXXFLAGS     += -Wno-deprecated
    endif
 
    LD            = g++

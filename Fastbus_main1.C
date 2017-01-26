@@ -869,14 +869,22 @@ void decode (int* data, TTree *tree) {
 
   // mapping
   Int_t slot, chan;
+  readdb();
+  Int_t layer=1;
+  Int_t module=1;
+  Int_t lr=2;
   for (int pmt = 1; pmt < NPMT+1; pmt++){
     for (int pixel = 1; pixel < NPIXEL+1; pixel++){
-      slot = handmapping_adc_slot(pmt);
-      chan = handmapping_adc_chan(pmt, pixel);
+      //slot = handmapping_adc_slot(pmt);
+      //chan = handmapping_adc_chan(pmt, pixel);
+      slot = aslot[layer][module][lr][pmt]-20;
+      chan = achan[layer][module][lr][pmt]+pixel-1;
       a[pmt][pixel] = adcdat[slot][chan];
 
-      slot = handmapping_tdc_slot(pmt);
-      chan = handmapping_tdc_chan(pmt, pixel);
+      //slot = handmapping_tdc_slot(pmt);
+      //chan = handmapping_tdc_chan(pmt, pixel);
+      slot = tslot[layer][module][lr][pmt]-14;
+      chan = tchan[layer][module][lr][pmt]+pixel-1;
       t[pmt][pixel] = tdctdat[slot][chan];
       l[pmt][pixel] = tdcldat[slot][chan];
     }

@@ -138,6 +138,9 @@ TCanvas *plot_adc(Int_t pmt=1, Int_t tdc_min=1300, Int_t tdc_width=200){
 	Int_t tdc_chan_start = handmapping_tdc_chan(pmt,1);
 	Int_t pixel1 = handmapping_pmt_pixel1(pmt);
 	Int_t pixel2 = handmapping_pmt_pixel2(pmt);
+
+	//cout << "ADC chan start = " << adc_chan_start << endl;
+	//cout << "TDC chan start = " << tdc_chan_start << endl;
 	
 	TString cut, draw, draw1, title;
 	title.Form("run_%d_ADC",run);
@@ -177,6 +180,13 @@ TCanvas *plot_adc(Int_t pmt=1, Int_t tdc_min=1300, Int_t tdc_width=200){
 
 	  Int_t itdc = tdc_chan_start + currentpad-1;
 	  Int_t iadc = i;
+
+	  //if(id==10){
+	  //cout << "adc_slot = " << adc_slot << endl;
+	  //cout << "iadc = " << iadc << endl;
+	  //cout << "tdc_slot = " << tdc_slot << endl;
+	  //cout << "itdc = " << itdc << endl;
+	  //}
 
 	  htmpa[currentpad-1]->Fill(adc[adc_slot][iadc]);
           if(tdcl[tdc_slot][itdc]>tdc_min&&tdcl[tdc_slot][itdc]<tdc_min+tdc_width){

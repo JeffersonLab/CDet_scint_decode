@@ -56,18 +56,22 @@ void readdb(TString fname = dbname){
   }
 
   // Read database from file
+  //cout << "Map Read:" << endl;
   in >> header;
+  //cout << header << endl;
   for (i=0; i<NPMT; i++){
     in >> layer >> module >> lr >> pmt 
        >> as >> ac
        >> ts >> tc
        >> p1 >> p2;
-    aslot[layer][module][lr][pmt] = as;
-    achan[layer][module][lr][pmt] = ac;
-    tslot[layer][module][lr][pmt] = ts;
-    tchan[layer][module][lr][pmt] = tc;
-    pixel1_miss[layer][module][lr][pmt] = p1;
-    pixel2_miss[layer][module][lr][pmt] = p2;
+    //cout << layer <<" "<< module <<" "<< lr <<" "<< pmt <<" "<< as <<" "<< ac <<" "<< ts <<" "<< tc <<" "<< p1 <<" "<< p2 << endl;
+    aslot[layer-1][module-1][lr-1][pmt-1] = as;
+    achan[layer-1][module-1][lr-1][pmt-1] = ac;
+    tslot[layer-1][module-1][lr-1][pmt-1] = ts;
+    tchan[layer-1][module-1][lr-1][pmt-1] = tc;
+    pixel1_miss[layer-1][module-1][lr-1][pmt-1] = p1;
+    pixel2_miss[layer-1][module-1][lr-1][pmt-1] = p2;
+    //cout << "Layer: " << layer << " Module: "<< module <<" LR: " << lr << " ADC slot/chan,TDC slot/chan,P1,P2: " << aslot[layer-1][module-1][lr-1][pmt-1] <<":"<< achan[layer-1][module-1][lr-1][pmt-1] <<":"<< tslot[layer-1][module-1][lr-1][pmt-1]  <<":"<< tchan[layer-1][module-1][lr-1][pmt-1]  <<":"<< pixel1_miss[layer-1][module-1][lr-1][pmt-1]  <<":"<< pixel2_miss[layer-1][module-1][lr-1][pmt-1] << endl;
   }
   in.close();
 }
@@ -79,45 +83,6 @@ void readdb(TString fname = dbname){
 // accept just integers, (thanks, root dev team, mapping would be too
 // simple otherwise)
 
-
-// manual mapping (USE THIS!):
-
-// pixel (counting from 0) -> ADC slot & chan
-//Int_t aslot(Int_t pixel){
-//  Int_t slot = -1;
-//  if ( (pixel >= 0 && pixel <= 15) || 
-//       (pixel >= 16 && pixel <= 31) || 
-//       (pixel >= 32 && pixel <= 47) ||
-//       (pixel >= 48 && pixel <= 63) ) slot = 0;
-//  if ( (pixel >= 64 && pixel <= 79) ||
-//       (pixel >= 112 && pixel <= 127) ) slot = 1;
-//  if ( (pixel >= 128 && pixel <= 143) ||
-//       (pixel >= 144 && pixel <= 159) ||
-//       (pixel >= 160 && pixel <= 175) ||
-//       (pixel >= 176 && pixel <= 191) ) slot = 2;
-//  if ( (pixel >= 192 && pixel <= 207) ||
-//       (pixel >= 208 && pixel <= 223) ) slot = 3;
-//  return slot;
-//}
-
-//Int_t achan(Int_t pixel){
-//  Int_t chan = -1;
-//  if (pixel >= 0 && pixel <= 15) chan = pixel;
-//  if (pixel >= 16 && pixel <= 31) chan = pixel;
-//  if (pixel >= 32 && pixel <= 47) chan = pixel;
-//  if (pixel >= 48 && pixel <= 63) chan = pixel;
-//  if (pixel >= 64 && pixel <= 79) chan = pixel - 64;
-//  if (pixel >= 80 && pixel <= 95) chan = pixel - 48;
-//  if (pixel >= 96 && pixel <= 111) chan = pixel - 48;
-//  if (pixel >= 112 && pixel <= 127) chan = pixel - 64;
-//  if (pixel >= 128 && pixel <= 143) chan = pixel - 128;
-//  if (pixel >= 144 && pixel <= 159) chan = pixel - 128;
-//  if (pixel >= 160 && pixel <= 175) chan = pixel - 128;
-//  if (pixel >= 176 && pixel <= 191) chan = pixel - 128;
-//  if (pixel >= 192 && pixel <= 207) chan = pixel - 192;
-//  if (pixel >= 208 && pixel <= 223) chan = pixel - 192;
-//  return chan;
-//}
 
 // global pixel number 0..NBAR
 Int_t globalpixel(Int_t pmt, Int_t pixel){

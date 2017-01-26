@@ -131,17 +131,16 @@ void init(Int_t runno){
 // tdc_chan_start/slot, those values will be used instead. May be
 // useful during testing of ADC/TDC channels
 TCanvas *plot_adc(Int_t pmt=1, Int_t tdc_min=1300, Int_t tdc_width=200){
-	
-	Int_t adc_slot = handmapping_adc_slot(pmt);
-	Int_t adc_chan_start = handmapping_adc_chan(pmt,1);
-	Int_t tdc_slot = handmapping_tdc_slot(pmt);
-	Int_t tdc_chan_start = handmapping_tdc_chan(pmt,1);
-	Int_t pixel1 = handmapping_pmt_pixel1(pmt);
-	Int_t pixel2 = handmapping_pmt_pixel2(pmt);
 
-	//cout << "ADC chan start = " << adc_chan_start << endl;
-	//cout << "TDC chan start = " << tdc_chan_start << endl;
-	
+	readdb();
+	Int_t layer=0, module=0, lr=1;
+	Int_t adc_slot = aslot[layer][module][lr][pmt-1]-20;
+	Int_t adc_chan_start = achan[layer][module][lr][pmt-1];
+	Int_t tdc_slot = tslot[layer][module][lr][pmt-1]-14;
+	Int_t tdc_chan_start = tchan[layer][module][lr][pmt-1];
+	Int_t pixel1 = pixel1_miss[layer][module][lr][pmt-1];
+	Int_t pixel2 = pixel2_miss[layer][module][lr][pmt-1];
+
 	TString cut, draw, draw1, title;
 	title.Form("run_%d_ADC",run);
 	TCanvas *cADC= new TCanvas("cADC",title,xcanvas,ycanvas);
@@ -242,12 +241,14 @@ TCanvas *plot_adc(Int_t pmt=1, Int_t tdc_min=1300, Int_t tdc_width=200){
 // useful during testing of ADC/TDC channels
 TCanvas *plot_ratio(Int_t pmt=1, Int_t tdc_min=1300, Int_t tdc_width=200){
 	
-	Int_t adc_slot = handmapping_adc_slot(pmt);
-	Int_t adc_chan_start = handmapping_adc_chan(pmt,1);
-	Int_t tdc_slot = handmapping_tdc_slot(pmt);
-	Int_t tdc_chan_start = handmapping_tdc_chan(pmt,1);
-	Int_t pixel1 = handmapping_pmt_pixel1(pmt);
-	Int_t pixel2 = handmapping_pmt_pixel2(pmt);
+	readdb();
+	Int_t layer=0, module=0, lr=1;
+	Int_t adc_slot = aslot[layer][module][lr][pmt-1]-20;
+	Int_t adc_chan_start = achan[layer][module][lr][pmt-1];
+	Int_t tdc_slot = tslot[layer][module][lr][pmt-1]-14;
+	Int_t tdc_chan_start = tchan[layer][module][lr][pmt-1];
+	Int_t pixel1 = pixel1_miss[layer][module][lr][pmt-1];
+	Int_t pixel2 = pixel2_miss[layer][module][lr][pmt-1];
 	
 	TString cut, draw, draw1, title;
 	title.Form("run_%d_ADC",run);
@@ -375,13 +376,15 @@ TCanvas *plot_occupancy(Int_t adc_cut=40, Int_t multiplicity_cut = 12, Int_t tdc
 		for(Int_t icount=0;icount<100;icount++){good_paddle[icount]=-1;}
 
 		for (Int_t pmt=1; pmt<15; pmt++){
-	
-			Int_t adc_slot = handmapping_adc_slot(pmt);
-			Int_t adc_chan_start = handmapping_adc_chan(pmt,1);
-			Int_t tdc_slot = handmapping_tdc_slot(pmt);
-			Int_t tdc_chan_start = handmapping_tdc_chan(pmt,1);
-			Int_t pixel1 = handmapping_pmt_pixel1(pmt);
-			Int_t pixel2 = handmapping_pmt_pixel2(pmt);
+			
+			readdb();
+			Int_t layer=0, module=0, lr=1;
+			Int_t adc_slot = aslot[layer][module][lr][pmt-1]-20;
+			Int_t adc_chan_start = achan[layer][module][lr][pmt-1];
+			Int_t tdc_slot = tslot[layer][module][lr][pmt-1]-14;
+			Int_t tdc_chan_start = tchan[layer][module][lr][pmt-1];
+			Int_t pixel1 = pixel1_miss[layer][module][lr][pmt-1];
+			Int_t pixel2 = pixel2_miss[layer][module][lr][pmt-1];
 	
 			TString tmpentry;
 			MyStyle->SetStatX(0.9);
@@ -440,12 +443,14 @@ TCanvas *plot_occupancy(Int_t adc_cut=40, Int_t multiplicity_cut = 12, Int_t tdc
 //
 TCanvas *plot_tdc_hits(Int_t pmt=1, Int_t adc_cut=40){
 	
-        Int_t adc_slot = handmapping_adc_slot(pmt);
-	Int_t adc_chan_start = handmapping_adc_chan(pmt,1);
-	Int_t tdc_slot = handmapping_tdc_slot(pmt);
-	Int_t tdc_chan_start = handmapping_tdc_chan(pmt,1);
-	Int_t pixel1 = handmapping_pmt_pixel1(pmt);
-	Int_t pixel2 = handmapping_pmt_pixel2(pmt);
+	readdb();
+	Int_t layer=0, module=0, lr=1;
+	Int_t adc_slot = aslot[layer][module][lr][pmt-1]-20;
+	Int_t adc_chan_start = achan[layer][module][lr][pmt-1];
+	Int_t tdc_slot = tslot[layer][module][lr][pmt-1]-14;
+	Int_t tdc_chan_start = tchan[layer][module][lr][pmt-1];
+	Int_t pixel1 = pixel1_miss[layer][module][lr][pmt-1];
+	Int_t pixel2 = pixel2_miss[layer][module][lr][pmt-1];
 	
 	TString cut, draw, draw1, title;
 	title.Form("run_%d_TDCHITS",run);
@@ -546,12 +551,14 @@ TCanvas *plot_tdc_hits(Int_t pmt=1, Int_t adc_cut=40){
 // Analogously for adc_slot
 TCanvas *plot_tdc(Int_t pmt=1, Int_t adc_cut=40, Int_t tdc_min=1300, Int_t tdc_width=200){
 	
-        Int_t adc_slot = handmapping_adc_slot(pmt);
-	Int_t adc_chan_start = handmapping_adc_chan(pmt,1);
-	Int_t tdc_slot = handmapping_tdc_slot(pmt);
-	Int_t tdc_chan_start = handmapping_tdc_chan(pmt,1);
-	Int_t pixel1 = handmapping_pmt_pixel1(pmt);
-	Int_t pixel2 = handmapping_pmt_pixel2(pmt);
+	readdb();
+	Int_t layer=0, module=0, lr=1;
+	Int_t adc_slot = aslot[layer][module][lr][pmt-1]-20;
+	Int_t adc_chan_start = achan[layer][module][lr][pmt-1];
+	Int_t tdc_slot = tslot[layer][module][lr][pmt-1]-14;
+	Int_t tdc_chan_start = tchan[layer][module][lr][pmt-1];
+	Int_t pixel1 = pixel1_miss[layer][module][lr][pmt-1];
+	Int_t pixel2 = pixel2_miss[layer][module][lr][pmt-1];
 	
 	TString cut, draw, draw1, title;
 	title.Form("run_%d_TDC",run);

@@ -81,7 +81,8 @@ ifeq ($(ARCH),macosx)
    MODERNGPPVERSION := $(shell expr `clang++ -dumpversion` \>= 4.2.1)
 
 # Linux with egcs
-   INCLUDES      = -I$(ROOTSYS)/include 
+   ROOTINC	 := $(shell root-config --incdir)
+   INCLUDES      = -I$(ROOTINC)
    CXX           = clang++
    ifneq ($(MODERNGPPVERSION),1)
    	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++0x -fPIC $(INCLUDES)

@@ -9,43 +9,13 @@
 
 # To make standalone, independent of root CINT macros
 export STANDALONE = 1
-
-export OSNAME := $(shell uname)
-
-ifeq ($(OSNAME),SunOS)
-
-   ROOTCFLAGS    = $(shell root-config --cflags)
-   ROOTLIBS      = $(shell root-config --libs)
-   ROOTGLIBS     = $(shell root-config --glibs)
-   CXX           = CC
-#   CXXFLAGS      = -O  -DSUNVERS -I$(ROOTSYS)/root/include
-   CXXFLAGS      = -O  -DSUNVERS 
-   LD            = CC
-   LDFLAGS       = -g -D
-   SOFLAGS       = -G
-   CXXFLAGS     += $(ROOTCFLAGS)
-   EVIO_LIB=libevio.a
-   GLIB =  -lm -lc -lgen -lw -lsocket -lnsl -ldl
-   SLIB = -L/opt/SUNWspro/SC4.2/lib -lF77 -lM77 -lsunmath
-# all this needed for ET...  up to comment below
-   ET_AC_FLAGS = -D_REENTRANT -D_POSIX_THREAD_SEMANTICS
-   ET_CFLAGS = -mt -fast -xO5  $(ET_AC_FLAGS) -DSUNVERS
-   CODA = /adaqfs/coda/2.2
-   LIBET = $(CODA)/SunOS/lib/libet.so
-   ONLIBS = $(LIBET) -lposix4 -lnsl -lsocket -lresolv
-   LIBS = $(EVIO_LIB) $(GLIB)
-   ifdef ONLINE
-     ALL_LIBS = $(LIBS) $(ONLIBS) 
-# ... finished, what ET needs.
-   else
-     ALL_LIBS = $(LIBS) 
-   endif
-   ALL_LIBS += $(ROOTLIBS) $(ROOTGLIBS)
-
+MACHINE := $(shell uname -s)
+ARCH	:= linux
+ifeq ($(MACHINE),Darwin)
+	ARCH := macosx
 endif
 
-
-ifeq ($(OSNAME),Linux)
+ifeq ($(ARCH),linux)
 
    ifdef OLDROOT
      ROOTLIBS      = -L$(ROOTSYS)/lib -lNew -lBase -lCint -lClib -lCont -lFunc \

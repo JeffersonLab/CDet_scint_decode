@@ -14,29 +14,20 @@ ARCH	:= linux
 ifeq ($(MACHINE),Darwin)
 	ARCH := macosx
 endif
+   
+ifdef OLDROOT
+   ROOTLIBS      = -L$(ROOTSYS)/lib -lNew -lBase -lCint -lClib -lCont -lFunc \
+                    -lGraf -lGraf3d -lHist -lHtml -lMatrix -lMeta -lMinuit -lNet \
+                    -lPhysics -lPostscript -lProof -lRint -lTree -lUnix -lZip
+   ROOTGLIBS     = -lGpad -lGui -lGX11 -lX3d
+else
+   ROOTLIBS      = $(shell root-config --libs)
+   ROOTGLIBS     = $(shell root-config --glibs)
+endif
 
 ifeq ($(ARCH),linux)
 
-   ifdef OLDROOT
-     ROOTLIBS      = -L$(ROOTSYS)/lib -lNew -lBase -lCint -lClib -lCont -lFunc \
-                    -lGraf -lGraf3d -lHist -lHtml -lMatrix -lMeta -lMinuit -lNet \
-                    -lPhysics -lPostscript -lProof -lRint -lTree -lUnix -lZip
-     ROOTGLIBS     = -lGpad -lGui -lGX11 -lX3d
-   else
-     ROOTLIBS      = $(shell root-config --libs)
-     ROOTGLIBS     = $(shell root-config --glibs)
-   endif
-
    MODERNGPPVERSION := $(shell expr `g++ -dumpversion` \> 4.4.7)
-
-   CXX           = g++
-   ifneq ($(MODERNGPPVERSION),1)
-   	CXXFLAGS      = -Wall -fno-exceptions -std=c++0x -fPIC  \
-                   -DLINUXVERS -I$(ROOTSYS)/include -O
-   else
-   	CXXFLAGS      = -Wall -fno-exceptions -std=c++11 -fPIC  \
-                   -DLINUXVERS -I$(ROOTSYS)/include -O
-   endif
 
 # Linux with egcs
    INCLUDES      = -I$(ROOTSYS)/include 
@@ -67,23 +58,83 @@ ifeq ($(ARCH),linux)
    ALL_LIBS = $(EVIO_LIB) $(GLIBS) $(ROOTLIBS) 
 
 # ONLIBS is needed for ET
-  ET_AC_FLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
-  ET_CFLAGS = -02 -fPIC $(ET_AC_FLAGS) -DLINUXVERS
+   ET_AC_FLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
+   ET_CFLAGS = -02 -fPIC $(ET_AC_FLAGS) -DLINUXVERS
 # CODA may be an environment variable.  Typical examples
 #  CODA = /adaqfs/coda/2.2
 #  CODA = /data7/user/coda/2.2
-  LIBET = $(CODA)/Linux/lib/libet.so
-  ONLIBS = $(LIBET) -lieee -lpthread -ldl -lresolv
+   LIBET = $(CODA)/Linux/lib/libet.so
+   ONLIBS = $(LIBET) -lieee -lpthread -ldl -lresolv
 
-  ifdef ONLINE
+   ifdef ONLINE
      ALL_LIBS += $(ONLIBS)
-  endif
+   endif
 
-  ifdef PROFILE
+   ifdef PROFILE
      CXXFLAGS += -pg
-  endif
+   endif
 
 endif
+
+ifeq ($(ARCH),macosx)
+
+   MODERNGPPVERSION := $(shell expr `clang++ -dumpversion` \>= 4.2.1)
+
+# Linux with egcs
+   INCLUDES      = -I$(ROOTSYS)/include 
+   CXX           = clang++
+   ifneq ($(MODERNGPPVERSION),1)
+   	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++0x -fPIC $(INCLUDES)
+   	CXXFLAGS     += -Wno-deprecated 
+   else
+   	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++11 -fPIC $(INCLUDES)
+   	CXXFLAGS     += -Wno-deprecated
+   endif
+
+   LD            = clang++
+   LDFLAGS       = 
+   SOFLAGS       = -shared
+
+   ifdef OLDROOT
+      LIBS          = $(ROOTLIBS) -lm -ldl -rdynamic
+      GLIBS         = $(ROOTLIBS) $(ROOTGLIBS) -L/usr/X11R6/lib \
+                      -lXpm -lX11 -lm -ldl -rdynamic
+      CXXFLAGS     += -DOLDROOT
+   else
+      LIBS          = $(ROOTLIBS)
+      GLIBS         = $(ROOTGLIBS) -L/usr/lib -lXpm -lX11
+   endif
+
+   EVIO_LIB=libevio.a
+   ALL_LIBS = $(EVIO_LIB) $(GLIBS) $(ROOTLIBS) 
+
+# ONLIBS is needed for ET
+   ET_AC_FLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
+   ET_CFLAGS = -02 -fPIC $(ET_AC_FLAGS) -DLINUXVERS
+# CODA may be an environment variable.  Typical examples
+#  CODA = /adaqfs/coda/2.2
+#  CODA = /data7/user/coda/2.2
+   LIBET = $(CODA)/Linux/lib/libet.so
+   ONLIBS = $(LIBET) -lieee -lpthread -ldl -lresolv
+
+   ifdef ONLINE
+     ALL_LIBS += $(ONLIBS)
+   endif
+
+   ifdef PROFILE
+     CXXFLAGS += -pg
+   endif
+
+endif
+
+SRC = THaCodaFile.C THaCodaData.C 
+ifdef ONLINE 
+  SRC += THaEtClient.C
+endif
+HEAD = $(SRC:.C=.h)
+DEPS = $(SRC:.C=.d)
+DECODE_OBJS = $(SRC:.C=.o)
+
 
 SRC = THaCodaFile.C THaCodaData.C 
 ifdef ONLINE 

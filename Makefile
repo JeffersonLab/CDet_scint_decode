@@ -85,10 +85,10 @@ ifeq ($(ARCH),macosx)
    INCLUDES      = -I$(ROOTINC)
    CXX           = clang++
    ifneq ($(MODERNGPPVERSION),1)
-   	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++0x -fPIC $(INCLUDES)
+   	CXXFLAGS      = -O -Wall  -Wno-c++11-narrowing -Woverloaded-virtual -pthread -std=c++0x -stdlib=libc++ -fPIC $(INCLUDES)
    	CXXFLAGS     += -Wno-deprecated 
    else
-   	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++11 -fPIC $(INCLUDES)
+   	CXXFLAGS      = -O -Wall  -Wno-c++11-narrowing -Woverloaded-virtual -pthread -std=c++11 -stdlib=libc++ -fPIC $(INCLUDES)
    	CXXFLAGS     += -Wno-deprecated
    endif
 
@@ -103,7 +103,7 @@ ifeq ($(ARCH),macosx)
       CXXFLAGS     += -DOLDROOT
    else
       LIBS          = $(ROOTLIBS)
-      GLIBS         = $(ROOTGLIBS) -L/usr/lib -lXpm -lX11
+      GLIBS         = $(ROOTGLIBS)
    endif
 
    EVIO_LIB=libevio.a
@@ -159,7 +159,8 @@ endif
 #all: fbanareal
 #all: myonline fbanareal
 #all: myonline
-all: dumper fbanareal
+#all: dumper fbanareal
+all: fbanareal
 
 fbanareal: Fastbus_main1.o $(DECODE_OBJS) $(HEAD) libevio.a
 	$(CXX) -g $(CXXFLAGS) -o $@ Fastbus_main1.C $(DECODE_OBJS) $(ALL_LIBS) 

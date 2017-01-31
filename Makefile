@@ -6,9 +6,14 @@
 
 # Use this if profiling (note: it slows down the code)
 # export PROFILE = 1
+# 
+# HA_INSTALL is location of Hall A Analyzer
+#
+HA_INSTALL := /home/brash/analyzer
 
 # To make standalone, independent of root CINT macros
 export STANDALONE = 1
+
 MACHINE := $(shell uname -s)
 ARCH	:= linux
 ifeq ($(MACHINE),Darwin)
@@ -25,12 +30,20 @@ else
    ROOTGLIBS     = $(shell root-config --glibs)
 endif
 
+EVIO_INSTALL := $(HA_INSTALL)/evio/evio-4.4.6
+EVIO_ARCH := $(shell uname -s)-$(shell uname -m)
+export EVIO_LIBDIR := $(EVIO_INSTALL)/$(EVIO_ARCH)/lib
+export EVIO_INCDIR := $(EVIO_INSTALL)/$(EVIO_ARCH)/include
+export HA_INCLUDES := $(HA_INSTALL)/hana_decode
+
 ifeq ($(ARCH),linux)
 
    MODERNGPPVERSION := $(shell expr `g++ -dumpversion` \> 4.4.7)
 
 # Linux with egcs
    INCLUDES      = -I$(ROOTSYS)/include 
+   INCLUDES	+= -I$(EVIO_INCDIR)
+   INCLUDES	+= -I$(HA_INCLUDES)
    CXX           = g++
    ifneq ($(MODERNGPPVERSION),1)
    	CXXFLAGS      = -O -Wall  -fno-exceptions -std=c++0x -fPIC $(INCLUDES)
@@ -54,8 +67,9 @@ ifeq ($(ARCH),linux)
       GLIBS         = $(ROOTGLIBS) -L/usr/lib -lXpm -lX11
    endif
 
-   EVIO_LIB=libevio.a
-   ALL_LIBS = $(EVIO_LIB) $(GLIBS) $(ROOTLIBS) 
+   HA_LIBS = -L$(HA_INSTALL) -lHallA -ldc 
+   EVIO_LIB= -L$(EVIO_LIBDIR) -levio
+   ALL_LIBS = $(HA_LIBS) $(EVIO_LIB) $(GLIBS) $(ROOTLIBS) 
 
 # ONLIBS is needed for ET
    ET_AC_FLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
@@ -80,7 +94,6 @@ ifeq ($(ARCH),macosx)
 
    MODERNGPPVERSION := $(shell expr `clang++ -dumpversion` \>= 4.2.1)
 
-# Linux with egcs
    ROOTINC	 := $(shell root-config --incdir)
    INCLUDES      = -I$(ROOTINC)
    CXX           = clang++
@@ -106,30 +119,9 @@ ifeq ($(ARCH),macosx)
       GLIBS         = $(ROOTGLIBS)
    endif
 
-   EVIO_INSTALL := /Users/brash/Dropbox/Research/analysis/analyzer/evio/evio-4.4.6 
-   EVIO_ARCH := $(shell uname -s)-$(shell uname -m)
-   export EVIO_LIBDIR := $(EVIO_INSTALL)/$(EVIO_ARCH)/lib
-   export EVIO_INCDIR := $(EVIO_INSTALL)/$(EVIO_ARCH)/include
-   ALL_LIBS = $(EVIO_LIB)/libevio.dylib $(GLIBS) $(ROOTLIBS) 
+   ALL_LIBS = $(EVIO_LIBDIR)/libevio.dylib $(GLIBS) $(ROOTLIBS) 
 
 endif
-
-SRC = THaCodaFile.C THaCodaData.C 
-ifdef ONLINE 
-  SRC += THaEtClient.C
-endif
-HEAD = $(SRC:.C=.h)
-DEPS = $(SRC:.C=.d)
-DECODE_OBJS = $(SRC:.C=.o)
-
-
-SRC = THaCodaFile.C THaCodaData.C 
-ifdef ONLINE 
-  SRC += THaEtClient.C
-endif
-HEAD = $(SRC:.C=.h)
-DEPS = $(SRC:.C=.d)
-DECODE_OBJS = $(SRC:.C=.o)
 
 ifdef STANDALONE 
   CXXFLAGS += -DSTANDALONE
@@ -137,38 +129,19 @@ endif
 
 all: fbanareal
 
-fbanareal: Fastbus_main1.o $(DECODE_OBJS) $(HEAD)
-	$(CXX) -g $(CXXFLAGS) -o $@ Fastbus_main1.C $(DECODE_OBJS) $(ALL_LIBS) 
+fbanareal: Fastbus_main1.o 
+	$(CXX) -g $(CXXFLAGS) -o $@ Fastbus_main1.C $(ALL_LIBS) 
 
-myonline: online.o $(DECODE_OBJS) $(HEAD)
-	$(CXX) -g $(CXXFLAGS) -o $@ online.C $(DECODE_OBJS) $(ALL_LIBS) 
-
-dumper: dumper.o $(DECODE_OBJS) $(HEAD)
-	$(CXX) -g $(CXXFLAGS) -o $@ dumper.C $(DECODE_OBJS) $(ALL_LIBS) 
 # END of EDITED
 
 # Below is the evio library, which comes rather directly 
 # from CODA group with minor tweaking by R. Michaels & O. Hansen.
 
-libevio.a: clean_evio evio.o swap_util.o 
-	rm -f $@
-	ar cr $@ evio.o swap_util.o 
-
-evio.o: evio.C
-	$(CXX) -c  $<
-
-swap_util.o: swap_util.C
-	$(CXX) -c  $<
-
-clean:  clean_evio
+clean:  
 	rm -f *.o *.a core *~ *.d *.out adcana
 
 realclean:  clean
 	rm -f *.d
-
-clean_evio:
-	rm -f evio.o swap_util.o 
-
 
 .SUFFIXES:
 .SUFFIXES: .c .cc .cpp .C .o .d

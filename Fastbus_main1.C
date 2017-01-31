@@ -2,7 +2,6 @@
 // R. Michaels, Oct 24, 2014.
 // developed later by Dasuni, et al.
 
-#define MAXROC     32
 #define MAXHITS    100
 #define MAXEVENTS  1000000
 // constants used to distinguish which case the bit 16 of TDC data word is referring to:
@@ -23,9 +22,11 @@ int quick;
 #include <iostream>
 #include <string>
 #include <vector>
+//
 #include "THaCodaFile.h"
 #include "THaEtClient.h"
 #include "TString.h"
+//
 #include "TROOT.h"
 #include "TFile.h"
 #include "TH1.h"
@@ -39,10 +40,11 @@ int quick;
 #include "TTree.h"
 
 using namespace std;
+using namespace Decoder;
 
 void usage();
 //void decode(int* data, TTree *tree_adc, TTree *tree_tdc);
-void decode(int* data, TTree *tree);
+void decode(UInt_t* data, TTree *tree);
 void analysis();
 void clear();
 void pedsup();
@@ -445,7 +447,7 @@ void clear() {
 }
 
 //void decode (int* data, TTree *tree_adc, TTree *tree_tdc) {
-void decode (int* data, TTree *tree) {
+void decode (UInt_t* data, TTree *tree) {
   // ----- init -----
   Int_t ichan = 0, rdata = 0;
   evlen = data[0] + 1;

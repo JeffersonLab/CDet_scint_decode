@@ -5,125 +5,121 @@
 //
 //  CODA data file, and facilities to open, close, read,
 //  write, filter CODA data to disk files, etc.
-//  A lot of this relies on the "evio.cpp" code from
-//  DAQ group which is a C++ rendition of evio.c that
-//  we have used for years, but here are some useful
-//  added features.
+//
+//  This is largely a wrapper around the JLAB EVIO library.
 //
 //  author  Robert Michaels (rom@jlab.org)
 //
 /////////////////////////////////////////////////////////////////////
 
 #include "THaCodaFile.h"
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
+#include <cerrno>
+#include "evio.h"
 
-#ifndef STANDALONE
-ClassImp(THaCodaFile)
-#endif
+using namespace std;
 
-//Constructors 
+namespace Decoder {
 
-  THaCodaFile::THaCodaFile() {       // do nothing (must open file separately)
-       ffirst = 0;
-       init(" no name ");
+//Constructors
+
+  THaCodaFile::THaCodaFile()
+    : ffirst(0), max_to_filt(0), handle(0), maxflist(0), maxftype(0) {
+    // Default constructor. Do nothing (must open file separately).
   }
-  THaCodaFile::THaCodaFile(TString fname) {
-       ffirst = 0;
-       init(fname);
-       int status = codaOpen(fname.Data(),"r");       // read only 
-       staterr("open",status);
-  }
-  THaCodaFile::THaCodaFile(TString fname, TString readwrite) {
-       ffirst = 0;
-       init(fname);
-       int status = codaOpen(fname.Data(),readwrite.Data());  // pass read or write flag
-       staterr("open",status);
+  THaCodaFile::THaCodaFile(const char* fname, const char* readwrite)
+    : ffirst(0), max_to_filt(0), handle(0), maxflist(0), maxftype(0) {
+    // Standard constructor
+    Int_t status = codaOpen(fname,readwrite);  // pass read or write flag
+    staterr("open",status);
   }
 
-//Destructor
   THaCodaFile::~THaCodaFile () {
-       int status = codaClose();
+    //Destructor
+       Int_t status = codaClose();
        staterr("close",status);
-  };       
+  };
 
-  int THaCodaFile::codaOpen(TString fname) {  
+  Int_t THaCodaFile::codaOpen(const char* fname, Int_t mode) {
        init(fname);
-       int status = evOpen((char*)fname.Data(),"r",&handle);
+       // evOpen really wants char*, so we need to do this safely. (The string
+       // _might_ be modified internally ...) Silly, really.
+       char *d_fname = strdup(fname), *d_flags = strdup("r");
+       Int_t status = evOpen(d_fname,d_flags,&handle);
+       free(d_fname); free(d_flags);
        staterr("open",status);
-       return status;
+       return ReturnCode(status);
   };
 
-  int THaCodaFile::codaOpen(TString fname, TString readwrite) {  
+  Int_t THaCodaFile::codaOpen(const char* fname, const char* readwrite, Int_t mode) {
       init(fname);
-      int status = evOpen((char*)fname.Data(),(char*)readwrite.Data(),&handle);
+      char *d_fname = strdup(fname), *d_flags = strdup(readwrite);
+      Int_t status = evOpen(d_fname,d_flags,&handle);
+      free(d_fname); free(d_flags);
       staterr("open",status);
-      return status;
+      return ReturnCode(status);
   };
 
 
-  int THaCodaFile::codaClose() {
+  Int_t THaCodaFile::codaClose() {
 // Close the file. Do nothing if file not opened.
     if( handle ) {
-      int status = evClose(handle);
+      Int_t status = evClose(handle);
       handle = 0;
-      return status;
+      return ReturnCode(status);
     }
-    return CODA_OK;
+    return S_SUCCESS;
   }
 
 
-  int THaCodaFile::codaRead() {
+  Int_t THaCodaFile::codaRead() {
 // codaRead: Reads data from file, stored in evbuffer.
 // Must be called once per event.
-    int status;
+    Int_t status;
     if ( handle ) {
        status = evRead(handle, evbuffer, MAXEVLEN);
        staterr("read",status);
-       if (status != S_SUCCESS) {
-  	  if (status == EOF) return status;  // ok, end of file
-          status = CODA_ERROR;
-       }
     } else {
       if(CODA_VERBOSE) {
          cout << "codaRead ERROR: tried to access a file with handle = 0" << endl;
          cout << "You need to call codaOpen(filename)" << endl;
          cout << "or use the constructor with (filename) arg" << endl;
       }
-      status = CODA_ERROR;
+      status = S_EVFILE_BADHANDLE;
     }
-    return status;
+    return ReturnCode(status);
   };
 
 
-
-  int THaCodaFile::codaWrite(int *evbuffer) {
-// codaWrite: Writes data to file
-     int status;
+  Int_t THaCodaFile::codaWrite(const UInt_t* evbuf) {
+// codaWrite: Writes data from 'evbuf' to file
+     Int_t status;
      if ( handle ) {
-       status = evWrite(handle, evbuffer);
+       status = evWrite(handle, evbuf);
        staterr("write",status);
      } else {
        cout << "codaWrite ERROR: tried to access file with handle = 0" << endl;
-       status = CODA_ERROR;
+       status = S_EVFILE_BADHANDLE;
      }
-     return status;
+     return ReturnCode(status);
    };
 
 
 
-  int* THaCodaFile::getEvBuffer() {
-// Here's how to get raw event buffer, evbuffer, after codaRead call
-      return evbuffer;
+  bool THaCodaFile::isOpen() const {
+    return (handle!=0);
   }
 
-
-  int THaCodaFile::filterToFile(TString output_file) {
+  Int_t THaCodaFile::filterToFile(const char* output_file) {
 // A call to filterToFile filters from present file to output_file
-// using filter criteria defined by evtypes, evlist, and max_to_filt 
-// which are loaded by public methods of this class.  If no conditions 
+// using filter criteria defined by evtypes, evlist, and max_to_filt
+// which are loaded by public methods of this class.  If no conditions
 // were loaded, it makes a copy of the input file (i.e. no filtering).
 
-       int i;
-       if(output_file == filename) {
+       Int_t i;
+       if(filename == output_file) {
 	 if(CODA_VERBOSE) {
            cout << "filterToFile: ERROR: ";
            cout << "Input and output files cannot be same " << endl;
@@ -132,7 +128,7 @@ ClassImp(THaCodaFile)
          return CODA_ERROR;
        }
        FILE *fp;
-       if ((fp = fopen(output_file.Data(),"r")) != NULL) {
+       if ((fp = fopen(output_file,"r")) != NULL) {
           if(CODA_VERBOSE) {
   	    cout << "filterToFile:  ERROR:  ";
             cout << "Output file `" << output_file << "' exists " << endl;
@@ -142,24 +138,24 @@ ClassImp(THaCodaFile)
           fclose(fp);
           return CODA_ERROR;
        }
-       THaCodaFile* fout = new THaCodaFile(output_file.Data(),"w"); 
-       int nfilt = 0;
+       THaCodaFile* fout = new THaCodaFile(output_file,"w");
+       Int_t nfilt = 0;
 
        while (codaRead() == S_SUCCESS) {
-           int* rawbuff = getEvBuffer();
-           int evtype = rawbuff[1]>>16;
-           int evnum = rawbuff[4];
-           int oktofilt = 1;
-           if (CODA_DEBUG) { 
+           UInt_t* rawbuff = getEvBuffer();
+           Int_t evtype = rawbuff[1]>>16;
+           Int_t evnum = rawbuff[4];
+           Int_t oktofilt = 1;
+           if (CODA_DEBUG) {
 	     cout << "Input evtype " << dec << evtype;
-             cout << "  evnum " << evnum << endl; 
+             cout << "  evnum " << evnum << endl;
              cout << "max_to_filt = " << max_to_filt << endl;
              cout << "evtype size = " << evtypes[0] << endl;
              cout << "evlist size = " << evlist[0] << endl;
 	   }
            if ( evtypes[0] > 0 ) {
                oktofilt = 0;
-               for (i=1; i<=evtypes[0]; i++) {               
+               for (i=1; i<=evtypes[0]; i++) {
                    if (evtype == evtypes[i]) {
                        oktofilt = 1;
                        goto Cont1;
@@ -169,7 +165,7 @@ ClassImp(THaCodaFile)
 Cont1:
            if ( evlist[0] > 0 ) {
                oktofilt = 0;
-               for (i=1; i<=evlist[0]; i++) {               
+               for (i=1; i<=evlist[0]; i++) {
                    if (evnum == evlist[i]) {
                        oktofilt = 1;
                        goto Cont2;
@@ -182,7 +178,7 @@ Cont2:
              if (CODA_DEBUG) {
 	       cout << "Filtering event, nfilt " << dec << nfilt << endl;
 	     }
-	     int status = fout->codaWrite(getEvBuffer());
+	     Int_t status = fout->codaWrite(getEvBuffer());
              if (status != S_SUCCESS) {
 	       if (CODA_VERBOSE) {
 		 cout << "Error in filterToFile ! " << endl;
@@ -204,44 +200,41 @@ Finish:
 
 
 
-  void THaCodaFile::addEvTypeFilt(int evtype_to_filt)
+  void THaCodaFile::addEvTypeFilt(Int_t evtype_to_filt)
 // Function to set up filtering by event type
   {
-     int i;
      initFilter();
      if (evtypes[0] >= maxftype-1) {
         TArrayI temp = evtypes;
         maxftype = maxftype + 100;
         evtypes.Set(maxftype);
-        for (i=0; i<=temp[0]; i++) evtypes[i]=temp[i];
+        for (Int_t i=0; i<=temp[0]; i++) evtypes[i]=temp[i];
         temp.~TArrayI();
      }
      evtypes[0] = evtypes[0] + 1;  // 0th element = num elements in list
-     int n = evtypes[0];
+     Int_t n = evtypes[0];
      evtypes[n] = evtype_to_filt;
      return;
   };
 
 
-  void THaCodaFile::addEvListFilt(int event_num_to_filt)
+  void THaCodaFile::addEvListFilt(Int_t event_num_to_filt)
 // Function to set up filtering by list of event numbers
   {
-     int i;
      initFilter();
      if (evlist[0] >= maxflist-1) {
         TArrayI temp = evlist;
         maxflist = maxflist + 100;
         evlist.Set(maxflist);
-        for (i=0; i<=temp[0]; i++) evlist[i]=temp[i];
-        temp.~TArrayI();
+        for (Int_t i=0; i<=temp[0]; i++) evlist[i]=temp[i];
      }
      evlist[0] = evlist[0] + 1;  // 0th element = num elements in list
-     int n = evlist[0];
+     Int_t n = evlist[0];
      evlist[n] = event_num_to_filt;
      return;
   };
 
-  void THaCodaFile::setMaxEvFilt(int max_event)
+  void THaCodaFile::setMaxEvFilt(Int_t max_event)
 // Function to set up the max number of events to filter
   {
      max_to_filt = max_event;
@@ -250,57 +243,54 @@ Finish:
 
 
 
-void THaCodaFile::staterr(TString tried_to, int status) {
+void THaCodaFile::staterr(const char* tried_to, Long64_t status) {
 // staterr gives the non-expert user a reasonable clue
 // of what the status returns from evio mean.
 // Note: severe errors can cause job to exit(0)
 // and the user has to pay attention to why.
     if (status == S_SUCCESS) return;  // everything is fine.
-    if (tried_to == "open") {
-       cout << "THaCodaFile: ERROR opening file = " << filename << endl;
-       cout << "Most likely errors are: " << endl;
-       cout << "   1.  You mistyped the name of file ?" << endl;
-       cout << "   2.  The file has length zero ? " << endl;
-       cout << "Job aborting !! " << endl;
-       exit(0);
+    if (status == EOF) {
+      if(CODA_VERBOSE) {
+	cout << "Normal end of file " << filename << " encountered" << endl;
+      }
+      return;
     }
+    cerr << Form("THaCodaFile: ERROR while trying to %s %s: ",
+		 tried_to, filename.Data());
     switch (status) {
       case S_EVFILE_TRUNC :
-	 cout << "THaCodaFile ERROR:  Truncated event on file read" << endl;
-         cout << "Evbuffer size is too small.  Job aborted." << endl;
-         exit(0);  //  If this ever happens, recompile with MAXEVLEN
-	           //  bigger, and mutter under your breath at the author.    
-      case S_EVFILE_BADBLOCK : 
-        cout << "Bad block number encountered " << endl;
+	cerr << "Truncated event on file read. Evbuffer size is too small. "
+	     << endl;
+      case S_EVFILE_BADBLOCK :
+        cerr << "Bad block number encountered " << endl;
         break;
       case S_EVFILE_BADHANDLE :
-        cout << "Bad handle (file/stream not open) " << endl;
+        cerr << "Bad handle (file/stream not open) " << endl;
         break;
-      case S_EVFILE_ALLOCFAIL : 
-        cout << "Failed to allocate event I/O" << endl;
+      case S_EVFILE_ALLOCFAIL :
+        cerr << "Failed to allocate event I/O" << endl;
         break;
       case S_EVFILE_BADFILE :
-        cout << "File format error" << endl;
+        cerr << "File format error" << endl;
         break;
       case S_EVFILE_UNKOPTION :
-        cout << "Unknown option specified" << endl;
+        cerr << "Unknown file open option specified" << endl;
         break;
       case S_EVFILE_UNXPTDEOF :
-        cout << "Unexpected end of file while reading event" << endl;
-        break;
-      case EOF: 
-        if(CODA_VERBOSE) {
-          cout << "Normal end of file " << filename << " encountered" << endl;
-	}
+        cerr << "Unexpected end of file while reading event" << endl;
         break;
       default:
-        cout << "Error status  0x" << hex << status << endl;
+	errno = status;
+	perror(0);
       }
   };
 
-  void THaCodaFile::init(TString fname) {
+  void THaCodaFile::init(const char* fname) {
+    if( filename != fname ) {
+      codaClose();
+      filename = fname;
+    }
     handle = 0;
-    filename = fname;
   };
 
   void THaCodaFile::initFilter() {
@@ -315,14 +305,6 @@ void THaCodaFile::staterr(TString tried_to, int status) {
     }
   };
 
+}
 
-
-
-
-
-
-
-
-
-
-
+ClassImp(Decoder::THaCodaFile)

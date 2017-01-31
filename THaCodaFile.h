@@ -17,56 +17,47 @@
 //
 /////////////////////////////////////////////////////////////////////
 
-#include "Rtypes.h"
 #include "THaCodaData.h"
-#include <iostream>
-#include <stdlib.h>
-#include "evio.h"
-#include "TString.h"
+#include "Decoder.h"
 #include "TArrayI.h"
 
-class THaCodaFile : public THaCodaData 
-{
+namespace Decoder {
+
+class THaCodaFile : public THaCodaData {
 
 public:
 
   THaCodaFile();
-  THaCodaFile(TString filename);
-  THaCodaFile(TString filename, TString rw);
+  THaCodaFile(const char* filename, const char* rw="r");
   ~THaCodaFile();
-  int codaOpen(TString filename);
-  int codaOpen(TString filename, TString rw);
-  int codaClose();
-  int codaRead(); 
-  int codaWrite(int* evbuffer);
-  int *getEvBuffer();     
-  int filterToFile(TString output_file);     // filter to an output file
-  void addEvTypeFilt(int evtype_to_filt);    // add an event type to list
-  void addEvListFilt(int event_to_filt);     // add an event num to list
-  void setMaxEvFilt(int max_event);          // max num events to filter
+  Int_t codaOpen(const char* filename, Int_t mode=1);
+  Int_t codaOpen(const char* filename, const char* rw, Int_t mode=1);
+  Int_t codaClose();
+  Int_t codaRead();
+  Int_t codaWrite(const UInt_t* evbuffer);
+  Int_t filterToFile(const char* output_file); // filter to an output file
+  void addEvTypeFilt(Int_t evtype_to_filt);    // add an event type to list
+  void addEvListFilt(Int_t event_to_filt);     // add an event num to list
+  void setMaxEvFilt(Int_t max_event);          // max num events to filter
+  virtual bool isOpen() const;
 
 private:
 
   THaCodaFile(const THaCodaFile &fn);
   THaCodaFile& operator=(const THaCodaFile &fn);
-  void init(TString fname);
+  void init(const char* fname="");
   void initFilter();
-  void staterr(TString tried_to, int status);  // Can cause job to exit(0)
-  int ffirst;
-  int max_to_filt,handle;
-  int maxflist,maxftype;
+  void staterr(const char* tried_to, Long64_t status);  // Can cause job to exit(0)
+  Int_t ffirst;
+  Int_t max_to_filt;
+  Int_t handle;
+  Int_t maxflist,maxftype;
   TArrayI evlist, evtypes;
 
-#ifndef STANDALONE
   ClassDef(THaCodaFile,0)   //  File of CODA data
-#endif
 
 };
 
+}
+
 #endif
-
-
-
-
-
-

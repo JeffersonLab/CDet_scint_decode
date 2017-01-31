@@ -106,25 +106,11 @@ ifeq ($(ARCH),macosx)
       GLIBS         = $(ROOTGLIBS)
    endif
 
-   EVIO_LIB=libevio.a
-   ALL_LIBS = $(EVIO_LIB) $(GLIBS) $(ROOTLIBS) 
-
-# ONLIBS is needed for ET
-   ET_AC_FLAGS = -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS
-   ET_CFLAGS = -02 -fPIC $(ET_AC_FLAGS) -DLINUXVERS
-# CODA may be an environment variable.  Typical examples
-#  CODA = /adaqfs/coda/2.2
-#  CODA = /data7/user/coda/2.2
-   LIBET = $(CODA)/Linux/lib/libet.so
-   ONLIBS = $(LIBET) -lieee -lpthread -ldl -lresolv
-
-   ifdef ONLINE
-     ALL_LIBS += $(ONLIBS)
-   endif
-
-   ifdef PROFILE
-     CXXFLAGS += -pg
-   endif
+   EVIO_INSTALL := /Users/brash/Dropbox/Research/analysis/analyzer/evio/evio-4.4.6 
+   EVIO_ARCH := $(shell uname -s)-$(shell uname -m)
+   export EVIO_LIBDIR := $(EVIO_INSTALL)/$(EVIO_ARCH)/lib
+   export EVIO_INCDIR := $(EVIO_INSTALL)/$(EVIO_ARCH)/include
+   ALL_LIBS = $(EVIO_LIB)/libevio.dylib $(GLIBS) $(ROOTLIBS) 
 
 endif
 
@@ -149,33 +135,17 @@ ifdef STANDALONE
   CXXFLAGS += -DSTANDALONE
 endif
 
-# ORIGINAL:
-#all: fbana
-
-#fbana: Fastbus_main1.o $(DECODE_OBJS) $(HEAD) libevio.a
-#	$(CXX) -g $(CXXFLAGS) -o $@ Fastbus_main1.C $(DECODE_OBJS) $(ALL_LIBS) 
-# END of ORIGINAL
-# EDITED:
-#all: fbanareal
-#all: myonline fbanareal
-#all: myonline
-#all: dumper fbanareal
 all: fbanareal
 
-fbanareal: Fastbus_main1.o $(DECODE_OBJS) $(HEAD) libevio.a
+fbanareal: Fastbus_main1.o $(DECODE_OBJS) $(HEAD)
 	$(CXX) -g $(CXXFLAGS) -o $@ Fastbus_main1.C $(DECODE_OBJS) $(ALL_LIBS) 
 
-myonline: online.o $(DECODE_OBJS) $(HEAD) libevio.a
+myonline: online.o $(DECODE_OBJS) $(HEAD)
 	$(CXX) -g $(CXXFLAGS) -o $@ online.C $(DECODE_OBJS) $(ALL_LIBS) 
 
-dumper: dumper.o $(DECODE_OBJS) $(HEAD) libevio.a
+dumper: dumper.o $(DECODE_OBJS) $(HEAD)
 	$(CXX) -g $(CXXFLAGS) -o $@ dumper.C $(DECODE_OBJS) $(ALL_LIBS) 
 # END of EDITED
-
-# Here we build a library with all this stuff
-libcoda.a: $(DECODE_OBJS) clean_evio evio.o swap_util.o 
-	rm -f $@
-	ar cr $@ $(DECODE_OBJS) evio.o swap_util.o 
 
 # Below is the evio library, which comes rather directly 
 # from CODA group with minor tweaking by R. Michaels & O. Hansen.
